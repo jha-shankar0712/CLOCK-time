@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Luxury Clock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:wght@400;500&family=Cormorant+Garamond:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:        #c9a84c;
+      --gold-light:  #e8d48a;
+      --gold-deep:   #8b6914;
+      --gold-pale:   #f5ecc8;
+      --dial-bg:     #0e0b06;
+      --dial-mid:    #181208;
+      --text-bright: #f0e0a0;
+      --text-muted:  #7a6530;
+      --bezel:       #b8960e;
+    }
+
+    body {
+      background: #07060300;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'EB Garamond', serif;
+      overflow: hidden;
+      background: radial-gradient(ellipse 100% 100% at 50% 50%, #1a1005 0%, #07060300 70%), #080500;
+    }
+
+    /* ── leather texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(45deg, rgba(201,168,76,.015) 0px, transparent 2px),
+        repeating-linear-gradient(-45deg, rgba(201,168,76,.015) 0px, transparent 2px);
+      background-size: 6px 6px;
+      pointer-events: none;
+    }
+
+    /* ── outer case ── */
+    .watch-case {
+      position: relative;
+      width: 380px;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: floatIn 1s cubic-bezier(.22,1,.36,1) both;
+    }
+
+    /* layered bezel rings */
+    .bezel-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(
+        #e8c95a 0deg, #a07810 30deg, #e8c95a 60deg, #a07810 90deg,
+        #e8c95a 120deg, #a07810 150deg, #e8c95a 180deg, #a07810 210deg,
+        #e8c95a 240deg, #a07810 270deg, #e8c95a 300deg, #a07810 330deg, #e8c95a 360deg
+      );
+      box-shadow: 0 0 0 3px #6b500a, 0 30px 80px rgba(0,0,0,.85), 0 0 60px rgba(201,168,76,.12);
+    }
+
+    .bezel-inner {
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      background: #1a1208;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,.9), 0 0 0 1px rgba(201,168,76,.25);
+    }
+
+    /* dial face */
+    .dial {
+      position: absolute;
+      inset: 20px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse 70% 70% at 40% 35%, #201808 0%, #0e0b06 60%, #070500 100%);
+      border: 1px solid rgba(201,168,76,.18);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      overflow: hidden;
+    }
+
+    /* subtle sunburst on dial */
+    .dial::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        rgba(201,168,76,.025) 0deg, transparent 1deg, transparent 5deg, rgba(201,168,76,.025) 6deg
+      );
+    }
+
+    /* crown stem */
+    .crown-stem {
+      position: absolute;
+      right: -28px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 14px;
+      background: linear-gradient(180deg, #e8d070 0%, #8b6914 50%, #e8d070 100%);
+      border-radius: 0 4px 4px 0;
+      box-shadow: 2px 0 6px rgba(0,0,0,.5);
+    }
+    .crown-knob {
+      position: absolute;
+      right: -42px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 20px;
+      background: conic-gradient(#e8d070, #8b6914, #e8d070, #8b6914, #e8d070);
+      border-radius: 3px;
+      box-shadow: 2px 0 8px rgba(0,0,0,.6);
+    }
+
+    /* lugs */
+    .lug { position: absolute; width: 36px; height: 26px; background: linear-gradient(135deg, #c9a84c, #7a5a10); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,.6); }
+    .lug.tl { top: 8px; left: 50%; transform: translateX(-50%) rotate(-45deg); transform-origin: center bottom; top: 2px; }
+    .lug.tr { top: 2px; right: 50%; transform: translateX(50%) rotate(45deg); transform-origin: center bottom; }
+    .lug.bl { bottom: 2px; left: 50%; transform: translateX(-50%) rotate(45deg); transform-origin: center top; }
+    .lug.br { bottom: 2px; right: 50%; transform: translateX(50%) rotate(-45deg); transform-origin: center top; }
+
+    /* hour tick marks via SVG overlay */
+    .ticks-svg {
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+    }
+
+    /* ── content inside dial ── */
+    .dial-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: -10px;
+    }
+
+    .brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .crown-icon {
+      font-size: 0.7rem;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+      line-height: 1;
+    }
+
+    .model {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.48rem;
+      font-weight: 300;
+      color: var(--text-muted);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .time {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      font-weight: 400;
+      color: var(--text-bright);
+      letter-spacing: 0.04em;
+      line-height: 1;
+      margin-bottom: 2px;
+      text-shadow: 0 0 30px rgba(201,168,76,.2);
+    }
+
+    .seconds-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+
+    .live-pip {
+      width: 5px;
+      height: 5px;
+      background: var(--gold);
+      border-radius: 50%;
+      animation: pip 1s ease-in-out infinite;
+    }
+
+    .seconds-label {
+      font-size: 0.5rem;
+      color: var(--text-muted);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    /* date aperture */
+    .date-window {
+      background: #f5f0e0;
+      color: #1a0e00;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.52rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      padding: 3px 10px 2px;
+      border: 1px solid var(--gold-deep);
+      border-radius: 2px;
+      margin-bottom: 10px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,.2);
+    }
+
+    .swiss {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.4rem;
+      font-weight: 300;
+      color: #5a4820;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+
+    /* strap */
+    .strap-top, .strap-bottom {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      background: linear-gradient(90deg, #1a0a00 0%, #2e1a08 20%, #1a0a00 50%, #2e1a08 80%, #1a0a00 100%);
+      border-left: 1px solid #4a2a0a;
+      border-right: 1px solid #4a2a0a;
+    }
+    .strap-top {
+      top: -72px;
+      height: 78px;
+      border-radius: 8px 8px 0 0;
+      clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
+    }
+    .strap-bottom {
+      bottom: -72px;
+      height: 78px;
+      border-radius: 0 0 8px 8px;
+      clip-path: polygon(0% 0%, 100% 0%, 90% 100%, 10% 100%);
+    }
+
+    /* buckle hint */
+    .buckle {
+      position: absolute;
+      bottom: -130px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 12px;
+      border: 2px solid var(--gold-deep);
+      border-radius: 2px;
+      background: transparent;
+    }
+
+    /* ── animations ── */
+    @keyframes floatIn {
+      from { opacity: 0; transform: scale(.88) translateY(30px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes pip {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .25; transform: scale(.7); }
+    }
+
+    /* ── responsive ── */
+    @media (max-width: 440px) {
+      .watch-case { width: 310px; height: 310px; }
+      .time { font-size: 1.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div style="display:flex; flex-direction:column; align-items:center; gap:0;">
+
+  <!-- top strap -->
+  <div class="strap-top" style="position:relative; left:0; transform:none; margin-bottom:-4px;"></div>
+
+  <!-- watch case -->
+  <div class="watch-case">
+
+    <!-- lugs -->
+    <div class="lug tl"></div>
+    <div class="lug tr"></div>
+    <div class="lug bl"></div>
+    <div class="lug br"></div>
+
+    <!-- bezel -->
+    <div class="bezel-outer"></div>
+    <div class="bezel-inner"></div>
+
+    <!-- crown -->
+    <div class="crown-stem"></div>
+    <div class="crown-knob"></div>
+
+    <!-- tick marks -->
+    <svg class="ticks-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+      <g id="tick-group"></g>
+    </svg>
+
+    <!-- dial -->
+    <div class="dial">
+      <div class="dial-content">
+        <div class="brand">Rolexum</div>
+        <div class="crown-icon">♛</div>
+        <div class="model">Oyster Perpetual</div>
+        <div class="time" id="watch">12:00 AM</div>
+        <div class="seconds-row">
+          <div class="live-pip"></div>
+          <div class="seconds-label"><span id="secs">00</span>&nbsp;seconds</div>
+        </div>
+        <div class="date-window" id="dateBox">SUN 12 APR 2026</div>
+        <div class="swiss">Swiss Made &nbsp;·&nbsp; Superlative Chronometer</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- bottom strap -->
+  <div class="strap-bottom" style="position:relative; left:0; transform:none; margin-top:-4px;"></div>
+  <div class="buckle" style="position:relative; bottom:0; margin-top:4px;"></div>
+
+</div>
+
+<script>
+  // draw tick marks
+  const g = document.getElementById('tick-group');
+  const cx = 150, cy = 150, r = 138;
+  for (let i = 0; i < 60; i++) {
+    const angle = (i * 6 - 90) * Math.PI / 180;
+    const major = i % 5 === 0;
+    const len = major ? 14 : 7;
+    const x1 = cx + (r - len) * Math.cos(angle);
+    const y1 = cy + (r - len) * Math.sin(angle);
+    const x2 = cx + r * Math.cos(angle);
+    const y2 = cy + r * Math.sin(angle);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', major ? '#c9a84c' : '#5a4020');
+    line.setAttribute('stroke-width', major ? '2.5' : '1.2');
+    line.setAttribute('stroke-linecap', 'round');
+    g.appendChild(line);
+  }
+
+  // clock
+  const DAYS   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+  function update() {
+    const now = new Date();
+    let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    document.getElementById('watch').textContent =
+      String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+    document.getElementById('secs').textContent = String(s).padStart(2,'0');
+    document.getElementById('dateBox').textContent =
+      DAYS[now.getDay()] + ' ' +
+      String(now.getDate()).padStart(2,'0') + ' ' +
+      MONTHS[now.getMonth()] + ' ' +
+      now.getFullYear();
+  }
+
+  update();
+  setInterval(update, 1000);
+</script>
+</body>
+</html>
